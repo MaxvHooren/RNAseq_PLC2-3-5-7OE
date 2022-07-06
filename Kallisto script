@@ -1,0 +1,45 @@
+
+############### Kalisto
+%%bash
+cd filtered
+for filename in *filtered.fastq; do cat $filename | awk '{if(NR%4==2) print length($1)}' > readlength/$filename.txt; done
+#this will count the number of characters in every 4th row (the row with the basepairs) and print them in an output file
+ls
+
+#these files can now be loaded into R. Where you can extract the mean and SD. <br>
+#Be sure to first set your working directory. This proccs, I am sure can be looped but I can't for the life of me figure out how. so we will just use the power op "copy" and "paste" 
+
+#in R
+x1 <- read.csv("filtered/readlength/S01subset.fastq-filtered.fastq.txt", header = FALSE)
+x2 <- read.csv("filtered/readlength/S02subset.fastq-filtered.fastq.txt", header = FALSE)
+x3 <- read.csv("filtered/readlength/S03subset.fastq-filtered.fastq.txt", header = FALSE)
+x4 <- read.csv("filtered/readlength/S04subset.fastq-filtered.fastq.txt", header = FALSE)
+x5 <- read.csv("filtered/readlength/S05subset.fastq-filtered.fastq.txt", header = FALSE)
+x6 <- read.csv("filtered/readlength/S06subset.fastq-filtered.fastq.txt", header = FALSE)
+#etc.
+mean(x1$V1); sd(x1$V1)
+mean(x2$V1); sd(x2$V1)
+mean(x3$V1); sd(x3$V1)
+mean(x4$V1); sd(x4$V1)
+mean(x5$V1); sd(x5$V1)
+mean(x6$V1); sd(x6$V1)
+#etc.
+
+
+%%bash
+#first we need to make an index. This file can get quite big (1.02gb). 
+#A star will appear in the top right corner of this window. when it become a number it is done making the file (5 minutes)
+kallisto index -i TAIR10_cdna_20101214_updated.idx TAIR10_cdna_20101214_updated.txt
+ls
+%%bash
+#in our case the read length and SD is different in every sample, so we will copy paste the command
+#running this might take some time, as the library made by kallisto is that of the whole arabidopsis genome everytime.
+cd filtered
+ls
+kallisto quant -i ../TAIR10_cdna_20101214_updated.idx -o ../alligned/S01 -b 5 --single -l 97.143 -s 37.184 S01subset.fastq-filtered.fastq
+kallisto quant -i ../TAIR10_cdna_20101214_updated.idx -o ../alligned/S02 -b 5 --single -l 88.706 -s 36.975 S02subset.fastq-filtered.fastq
+kallisto quant -i ../TAIR10_cdna_20101214_updated.idx -o ../alligned/S03 -b 5 --single -l 86.015 -s 37.300 S03subset.fastq-filtered.fastq
+kallisto quant -i ../TAIR10_cdna_20101214_updated.idx -o ../alligned/S04 -b 5 --single -l 109.709 -s 34.396 S04subset.fastq-filtered.fastq
+kallisto quant -i ../TAIR10_cdna_20101214_updated.idx -o ../alligned/S05 -b 5 --single -l 92.368 -s 34.502 S05subset.fastq-filtered.fastq
+kallisto quant -i ../TAIR10_cdna_20101214_updated.idx -o ../alligned/S06 -b 5 --single -l 94.864 -s 37.371 S06subset.fastq-filtered.fastq
+#etc.
