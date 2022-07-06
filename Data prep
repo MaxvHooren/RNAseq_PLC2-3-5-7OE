@@ -1,0 +1,6 @@
+%%bash
+cd fastq-files
+for filename in S*.fastq; 
+    do fastx_clipper -l 25 -i $filename | fastq_quality_filter -q 17 -p 75 -o ../filtered/$filename-filtered.fastq; 
+done
+
