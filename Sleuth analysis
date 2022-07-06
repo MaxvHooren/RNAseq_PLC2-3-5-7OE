@@ -1,0 +1,133 @@
+#make folders to save to
+dir.create(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "sleuth_output_ownLSD","LRT"))
+dir.create(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "sleuth_output_ownLSD","LRT", "significant"))
+dir.create(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "sleuth_output_ownLSD","WT"))
+dir.create(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "sleuth_output_ownLSD","WT", "significant"))
+
+#load sleuth
+suppressMessages({
+  library("sleuth")
+})
+#set work directry yourself first
+setwd("O:/phd/RNAseq copy")
+
+#variable to look at
+variable <- "genotype"
+variableand <- paste("~",variable, sep = "")
+#wald test variable that is NOT going to be the standard
+baseline <- "AtWT"
+#sample conditon file name
+experiment <- "sample_conditions_new"
+savefile=paste(experiment, ".txt", sep = "")
+savefileLRT=paste("lrt",experiment,".txt", sep = "")
+savefileLRTsig=paste("lrt",experiment,"sig",".txt", sep = "")
+savefileWT=paste("wt",experiment, ".txt", sep = "")
+savefileWTsigp=paste("wt",experiment,"sigp", ".txt", sep = "")
+savefileWTsigq=paste("wt",experiment,"sigq", ".txt", sep = "")
+savefilecsv=paste(experiment, ".csv", sep = "")
+savefileSIGp=paste(experiment, "_sigp", ".txt", sep = "")
+savefileSIGq=paste(experiment, "_sigq", ".txt", sep = "")
+
+
+#put all the files "subgroup" folder
+
+#make folders to save to
+dir.create(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "sleuth_output_ownLSD", experiment))
+dir.create(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "sleuth_output_ownLSD", experiment,"LRT"))
+dir.create(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "sleuth_output_ownLSD", experiment,"LRT", "significant"))
+dir.create(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "sleuth_output_ownLSD", experiment,"WT"))
+dir.create(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "sleuth_output_ownLSD", experiment,"WT", "significant"))
+
+#name place of the files
+sample_id <- dir(file.path("Ion-torrent-raw-data","outputfilterdataBS500", "subgroup"))
+#make a file of pathname of each alligned file
+kal_dirs <- file.path("Ion-torrent-raw-data","outputfilterdataBS500", "subgroup", sample_id)
+#make a table for the metadata
+s2c <- read.table(file.path("Ion-torrent-raw-data","sample_conditions", savefile), header = TRUE, stringsAsFactors=FALSE)
+#select the variable you want to look at in the metadata (select(x,y,variable))
+s2c <- dplyr::select(s2c, sample = sample, variable)
+#add filepath for files in pathname so R knows which file corresponds to which metadata entry
+s2c <- dplyr::mutate(s2c, path = kal_dirs)
+#show the new improved metadata file
+s2c
+
+#making names to do WT test
+condfactor <- s2c[,variable]
+variablebaseline <- paste (variable,baseline, sep = "", collapse = NULL)
+
+#makes a table for WT test
+cond <- factor(condfactor)
+cond <- relevel(cond, ref = baseline)
+md <- model.matrix(~cond,s2c)
+colnames(md)[2] <- variablebaseline
+
+#make a sleuth object of all infromation
+so <- sleuth_prep(s2c, extra_bootstrap_summary = TRUE, read_bootstrap_tpm = TRUE)
+#sleuth test on differences using the full and reduced model, don't really understand. you have to fill in the "condition" so it knows where to look for differences
+so <- sleuth_fit(so, md, 'full')
+so <- sleuth_fit(so, ~1, 'reduced')
+#do Wald Test(kind of statistical test) on what was in the object, define the "compare to" group in the middle variable (gentotypeWT)
+so <- sleuth_wt(so, variablebaseline, 'full')
+#make better representation possible
+models(so)
+#make a table of the restults
+resultsWT_table <- sleuth_results(so, variablebaseline, test_type = 'wt')
+#write the result to a file
+write.table(resultsWT_table, file.path("ion-torrent-raw-data/outputfilterdataBS500/sleuth_output_ownLSD",experiment, "WT",savefileWT), sep="\t") 
+#only take the significant part of those files, write them to a new file and show some" 
+sleuthWT_significant <- dplyr::filter(resultsWT_table, qval <= 0.05)
+write.table(sleuthWT_significant, file.path("ion-torrent-raw-data/outputfilterdataBS500/sleuth_output_ownLSD",experiment, "WT/significant", savefileWTsig), sep="\t", row.names = FALSE) 
+head(sleuthWT_significant, 20)
+
+#make a sleuth object of all infromation again in case the WT test screwed it up
+so <- sleuth_prep(s2c, extra_bootstrap_summary = TRUE, read_bootstrap_tpm = TRUE)
+#sleuth test on differences using the full and reduced model, don't really understand. YOU HAVE TO FILL IN THE "CONDITION" so it knows where to look for differences
+so <- sleuth_fit(so, md, 'full')
+so <- sleuth_fit(so, ~1, 'reduced')
+#Sletuh Likelyhood Ratio Test
+so <- sleuth_lrt(so, 'reduced', 'full')
+#make better representation possible
+models(so)
+
+#open shiny for nice visualisation
+sleuth_live(so)
+sleuth_save(so, file.path("ion-torrent-raw-data/outputfilterdataBS500/sleuth_output_ownLSD",experiment,so))
+
+
+#make a table of the results of the LRT test 
+resultsLRT_table <- sleuth_results(so, 'reduced:full', 'lrt', show_all = FALSE)
+#write dat file into a file
+write.table(resultsLRT_table, file.path("ion-torrent-raw-data/outputfilterdataBS500/sleuth_output_ownLSD", experiment,"LRT",savefileLRT), sep="\t", row.names = FALSE) 
+#show the most significant changes in the LRT test
+sleuthLRT_significant <- dplyr::filter(resultsLRT_table, qval <= 0.05)
+write.table(sleuthLRT_significant, file.path("ion-torrent-raw-data/outputfilterdataBS500/sleuth_output_ownLSD", experiment,"LRT/significant",savefileLRTsig), sep="\t", row.names = FALSE)
+head(sleuthLRT_significant, 20)
+
+#sort listst
+resultsWT_table_sort <- resultsWT_table[order(resultsWT_table$target_id),]
+resultsLRT_table_sort <-resultsLRT_table[order(resultsLRT_table$target_id),]
+
+#add together lists
+ResultsWTandLRT <- merge(resultsWT_table_sort,resultsLRT_table_sort,by="target_id")
+#add a square "b" to the list to sort for most up and down regulated
+ResultsWTandLRT$b_square <- (ResultsWTandLRT$b)^2
+#do natural log of 'b' so we have a "real" up and down regulated number
+ResultsWTandLRT$b_nl <- exp((ResultsWTandLRT$b))
+#do natural log of b for analysis in other toys
+ResultsWTandLRT$b_ln_log2 <- log2(ResultsWTandLRT$b_nl)
+#sort for most up or down regulated
+ResultsWTandLRT <- ResultsWTandLRT[order(ResultsWTandLRT$qval.x, decreasing = TRUE),]
+head(ResultsWTandLRT)
+#take only significant results
+ResultsWTandLRTsigq<- subset(ResultsWTandLRT, qval.x<0.05)
+ResultsWTandLRTsigq <- subset(ResultsWTandLRTsigq, select = c(target_id, b_ln_log2))
+write.table(ResultsWTandLRTsigq, file.path("ion-torrent-raw-data/outputfilterdataBS500/sleuth_output_ownLSD", experiment,savefileSIGq), sep="\t", row.names = FALSE)
+ResultsWTandLRTsigp<- subset(ResultsWTandLRT, pval.x<0.05)
+ResultsWTandLRTsigp <- subset(ResultsWTandLRTsigp, select = c(target_id, b_ln_log2))
+write.table(ResultsWTandLRTsigp, file.path("ion-torrent-raw-data/outputfilterdataBS500/sleuth_output_ownLSD", experiment,savefileSIGp), sep="\t", row.names = FALSE)
+#make text and excel file
+write.table(ResultsWTandLRT, file.path("ion-torrent-raw-data/outputfilterdataBS500/sleuth_output_ownLSD", experiment, savefile), sep="\t", row.names = FALSE)
+write.csv(ResultsWTandLRT, file = file.path("ion-torrent-raw-data/outputfilterdataBS500/sleuth_output_ownLSD", experiment, savefilecsv))
+
+#open shiny for nice visualisation
+sleuth_live(so)
