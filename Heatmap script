@@ -1,0 +1,66 @@
+setwd("O:/phd/RNAseq copy/Ion-torrent-raw-data/outputfilterdataBS500/heatmaps/Shoot_special_genes")
+shoot_RNAseq_Annotated_heatmap_data <- read.csv("Differential_special_shoot_genes_shoot_samples_heatmap.csv", header = TRUE)
+shoot_RNAseq_Annotated_heatmap_data <- shoot_RNAseq_Annotated_heatmap_data%>% filter(shoot_RNAseq_Annotated_heatmap_data$target_id != "ERCC-00057")
+row_names <- shoot_RNAseq_Annotated_heatmap_data$target_id
+rownames(shoot_RNAseq_Annotated_heatmap_data) <- row_names
+my_genes_col<- shoot_RNAseq_Annotated_heatmap_data$target_id
+my_class_col <- as.data.frame(shoot_RNAseq_Annotated_heatmap_data$Class)
+shoot_RNAseq_Annotated_heatmap_data$target_id <- NULL
+
+my_heatmap <- pheatmap(shoot_RNAseq_Annotated_heatmap_data,
+                       cluster_cols = F,cutree_rows = 16,
+                       scale = "row",
+                       main = "RNAseq shoot"
+)
+filename <- "RNAseq_shoot_heatmap.png"
+save_pheatmap_png <- function(x, filename, width=2400, height=6400, res = 300) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+save_pheatmap_pdf <- function(x, filename, width=6, height=160){
+  stopifnot(!missing(x))
+  stopifnot(!missing(filename))
+  pdf(filename, width=width, height=height)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+save_pheatmap_png(my_heatmap, "RNAseq_shoot_heatmap.png")
+save_pheatmap_pdf(my_heatmap, "RNAseq_shoot_heatmap.pdf")
+
+
+#pheatmap heatmap with dendogram from earlier graph.
+
+setwd("O:/phd/RNAseq copy/Ion-torrent-raw-data/outputfilterdataBS500/heatmaps/Root_special_genes")
+Root_RNAseq_Annotated_heatmap_data <- read.csv("Differential_special_genes_root_samples_heatmap.csv", header = TRUE)
+Root_RNAseq_Annotated_heatmap_data <- Root_RNAseq_Annotated_heatmap_data%>% filter(Root_RNAseq_Annotated_heatmap_data$target_id != "ERCC-00057")
+row_names <- Root_RNAseq_Annotated_heatmap_data$target_id
+rownames(Root_RNAseq_Annotated_heatmap_data) <- row_names
+my_genes_col<- Root_RNAseq_Annotated_heatmap_data$target_id
+my_class_col <- as.data.frame(Root_RNAseq_Annotated_heatmap_data$Class)
+Root_RNAseq_Annotated_heatmap_data$target_id <- NULL
+
+my_heatmap <- pheatmap(Root_RNAseq_Annotated_heatmap_data,
+                       cluster_cols = F,cutree_rows = 6,
+                       scale = "row",
+                       main = "RNAseq Root"
+)
+filename <- "RNAseq_Root_heatmap.png"
+save_pheatmap_png <- function(x, filename, width=2400, height=6400, res = 300) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+save_pheatmap_pdf <- function(x, filename, width=6, height=16){
+  stopifnot(!missing(x))
+  stopifnot(!missing(filename))
+  pdf(filename, width=width, height=height)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+save_pheatmap_png(my_heatmap, "RNAseq_Root_heatmap.png")
+save_pheatmap_pdf(my_heatmap, "RNAseq_Root_heatmap.pdf")
